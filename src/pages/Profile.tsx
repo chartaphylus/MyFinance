@@ -4,7 +4,7 @@ import { User, Mail, Phone, Save, Download, Camera, Link as LinkIcon } from "luc
 import { supabase } from "../lib/supabase";
 
 export default function Profile() {
-  const { profile, updateProfile } = useAuth();
+  const { user, profile, updateProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [exportLoading, setExportLoading] = useState(false);
@@ -18,15 +18,15 @@ export default function Profile() {
   });
 
   useEffect(() => {
-    if (profile) {
+    if (profile || user) {
       setFormData({
-        full_name: profile.full_name || "",
-        email: profile.email || "",
-        phone: profile.phone || "",
-        avatar_url: profile.avatar_url || "",
+        full_name: profile?.full_name || "",
+        email: user?.email || profile?.email || "",
+        phone: profile?.phone || "",
+        avatar_url: profile?.avatar_url || "",
       });
     }
-  }, [profile]);
+  }, [profile, user]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -37,7 +37,7 @@ export default function Profile() {
       await updateProfile({
         full_name: formData.full_name,
         phone: formData.phone,
-        avatar_url: formData.avatar_url,
+        // avatar_url is updated separately in handleFileChange
       });
       setMessage("Profile updated successfully!");
     } catch (error: any) {
@@ -52,93 +52,114 @@ export default function Profile() {
       const file = e.target.files?.[0];
       if (!file || !profile) return;
 
-      const fileName = `${profile.id}/${Date.now()}.${file.name.split(".").pop()}`;
+      // Create local preview immediately
+      const objectUrl = URL.createObjectURL(file);
+      setFormData((prev) => ({ ...prev, avatar_url: objectUrl }));
+
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${profile.id}/${Date.now()}.${fileExt}`;
 
       // Upload file
-        const { error: uploadError } = await supabase.storage
-          .from("avatars")
-          .upload(fileName, file, { upsert: true });
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(fileName, file, { upsert: true });
 
-        if (uploadError) throw uploadError;
+      if (uploadError) throw uploadError;
 
-        // Ambil URL publik
-        const { data: publicUrlData } = supabase.storage
-          .from("avatars")
-          .getPublicUrl(fileName);
+      // Update profile with PATH, not URL (AuthContext will sign it)
+      await updateProfile({ avatar_url: fileName });
 
-        const publicUrl = publicUrlData.publicUrl;
-
-        // Simpan ke state
-        setFormData((prev) => ({ ...prev, avatar_url: publicUrl }));
-
-        // Update profile
-        await updateProfile({ avatar_url: publicUrl });
-
-        setMessage("Profile photo updated!");
+      setMessage("Profile photo updated!");
     } catch (error: any) {
       setMessage("Error uploading photo: " + error.message);
+      // Revert to original if error (optional, but good UX)
+      if (profile?.avatar_url) {
+        setFormData((prev) => ({ ...prev, avatar_url: profile.avatar_url || "" }));
+      }
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }
 
-  async function exportData(format: "json" | "csv") {
+  const [exportMonth, setExportMonth] = useState("");
+
+  async function exportData(format: "json" | "excel") {
     setExportLoading(true);
     try {
-      const { data: transactions } = await supabase
+      if (!user) throw new Error("No user logged in");
+
+      let query = supabase
         .from("transactions")
         .select("*")
-        .eq("user_id", profile!.id);
+        .eq("user_id", user.id);
 
-      const { data: events } = await supabase
-        .from("events")
-        .select("*")
-        .eq("user_id", profile!.id);
+      if (exportMonth) {
+        // exportMonth is YYYY-MM
+        const startDate = `${exportMonth}-01`;
 
-      const { data: todos } = await supabase
-        .from("todos")
-        .select("*")
-        .eq("user_id", profile!.id);
+        // Calculate next month for end of range
+        const [year, month] = exportMonth.split('-').map(Number);
+        const nextMonthDate = new Date(year, month, 1); // Month is 0-indexed in JS Date? Wait, '2024-02' split gives 2. new Date(2024, 2, 1) is March 1st. 
+        // Actually simpler:
+        // new Date(year, month, 1) where month is 1-12 from string?
+        // JS Date month is 0-11.
+        // If exportMonth is "2024-01", split gives month=1.
+        // new Date(2024, 1, 1) is Feb 1st. Correct for 'lt'.
 
-      const { data: notes } = await supabase
-        .from("notes")
-        .select("*")
-        .eq("user_id", profile!.id);
+        const nextYear = month === 12 ? year + 1 : year;
+        const nextMonth = month === 12 ? 1 : month + 1;
+        const nextMonthString = `${nextYear}-${nextMonth.toString().padStart(2, '0')}-01`;
 
-      const exportData = {
-        profile,
-        transactions: transactions || [],
-        events: events || [],
-        todos: todos || [],
-        notes: notes || [],
-        exported_at: new Date().toISOString(),
-      };
+        query = query.gte('date', startDate).lt('date', nextMonthString);
+      }
+
+      const { data: transactions, error } = await query;
+
+      if (error) throw error;
+
+      if (!transactions || transactions.length === 0) {
+        setMessage("No data found for the selected period.");
+        setExportLoading(false);
+        return;
+      }
 
       if (format === "json") {
+        // ... (existing json logic)
+        // Note: for JSON we might want to apply the same filter or keep it all? 
+        // Assuming user wants filtered data for both if month is selected, 
+        // or we can fetch everything for JSON if intended as full backup.
+        // For now let's apply filter to be consistent with the UI selector.
+
+        const { data: events } = await supabase.from("events").select("*").eq("user_id", profile!.id);
+        const { data: todos } = await supabase.from("todos").select("*").eq("user_id", profile!.id);
+        const { data: notes } = await supabase.from("notes").select("*").eq("user_id", profile!.id);
+
+        const exportData = {
+          profile,
+          transactions: transactions || [],
+          events: events || [],
+          todos: todos || [],
+          notes: notes || [],
+          exported_at: new Date().toISOString(),
+        };
+
         const blob = new Blob([JSON.stringify(exportData, null, 2)], {
           type: "application/json",
         });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `financeflow-export-${new Date().toISOString().split("T")[0]}.json`;
+        a.download = `financeflow-export-${exportMonth || 'full'}-${new Date().toISOString().split("T")[0]}.json`;
         a.click();
         URL.revokeObjectURL(url);
       } else {
-        let csv = "Type,Date,Category,Amount,Description\n";
-        transactions?.forEach((t) => {
-          csv += `${t.type},${t.transaction_date},${t.category},${t.amount},"${
-            t.description || ""
-          }"\n`;
-        });
+        // Excel Export
+        const xlsx = await import("xlsx");
+        const worksheet = xlsx.utils.json_to_sheet(transactions || []);
+        const workbook = xlsx.utils.book_new();
+        xlsx.utils.book_append_sheet(workbook, worksheet, "Transactions");
 
-        const blob = new Blob([csv], { type: "text/csv" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `financeflow-transactions-${new Date().toISOString().split("T")[0]}.csv`;
-        a.click();
-        URL.revokeObjectURL(url);
+        xlsx.writeFile(workbook, `financeflow-transactions-${exportMonth || 'all'}.xlsx`);
       }
 
       setMessage("Data exported successfully!");
@@ -155,11 +176,10 @@ export default function Profile() {
 
       {message && (
         <div
-          className={`p-4 rounded-lg ${
-            message.includes("Error")
-              ? "bg-red-500/20 text-red-400 border border-red-500/40"
-              : "bg-green-500/20 text-green-400 border border-green-500/40"
-          }`}
+          className={`p-4 rounded-lg ${message.includes("Error")
+            ? "bg-red-500/20 text-red-400 border border-red-500/40"
+            : "bg-green-500/20 text-green-400 border border-green-500/40"
+            }`}
         >
           {message}
         </div>
@@ -308,23 +328,38 @@ export default function Profile() {
             <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
               Download all your financial data for backup or analysis.
             </p>
-            <div className="space-y-2">
-              <button
-                onClick={() => exportData("json")}
-                disabled={exportLoading}
-                className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Download className="w-4 h-4" />
-                <span>{exportLoading ? "Exporting..." : "Export as JSON"}</span>
-              </button>
-              <button
-                onClick={() => exportData("csv")}
-                disabled={exportLoading}
-                className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Download className="w-4 h-4" />
-                <span>{exportLoading ? "Exporting..." : "Export Transactions as CSV"}</span>
-              </button>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Select Month
+                </label>
+                <input
+                  type="month"
+                  value={exportMonth}
+                  onChange={(e) => setExportMonth(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                />
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Leave empty to export all data.</p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  onClick={() => exportData("json")}
+                  disabled={exportLoading}
+                  className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>{exportLoading ? "..." : "Backup JSON"}</span>
+                </button>
+                <button
+                  onClick={() => exportData("excel")}
+                  disabled={exportLoading}
+                  className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-green-500/20"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>{exportLoading ? "..." : "Export Excel"}</span>
+                </button>
+              </div>
             </div>
           </div>
 

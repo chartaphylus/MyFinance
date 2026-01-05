@@ -159,7 +159,7 @@ export default function Transactions() {
         <div className="flex items-center gap-2">
           <Calendar className="w-5 h-5 text-slate-400" />
           <input type="month" value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)} className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100" />
-          {filterMonth && <button onClick={() => setFilterMonth('')} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"><X className="w-5 h-5"/></button>}
+          {filterMonth && <button onClick={() => setFilterMonth('')} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"><X className="w-5 h-5" /></button>}
         </div>
       </div>
 
@@ -191,11 +191,10 @@ export default function Transactions() {
                   <tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                     <td className="px-4 py-2 text-sm text-slate-900 dark:text-slate-100">{new Date(t.date).toLocaleDateString()}</td>
                     <td className="px-4 py-2">
-                      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
-                        t.type === 'income'
+                      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${t.type === 'income'
                           ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400'
                           : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400'
-                      }`}>{t.category}</span>
+                        }`}>{t.category}</span>
                     </td>
                     <td className="px-4 py-2 text-sm text-slate-600 dark:text-slate-400">{t.description || '-'}</td>
                     <td className="px-4 py-2 whitespace-nowrap">
@@ -204,8 +203,8 @@ export default function Transactions() {
                       </span>
                     </td>
                     <td className="px-4 py-2 text-right text-sm flex gap-2 justify-end">
-                      <button onClick={() => openModal(t)} className="text-cyan-500 hover:text-cyan-700 dark:hover:text-cyan-400"><Pencil className="w-4 h-4"/></button>
-                      <button onClick={() => deleteTransaction(t.id)} className="text-red-500 hover:text-red-700 dark:hover:text-red-400"><Trash2 className="w-4 h-4"/></button>
+                      <button onClick={() => openModal(t)} className="text-cyan-500 hover:text-cyan-700 dark:hover:text-cyan-400"><Pencil className="w-4 h-4" /></button>
+                      <button onClick={() => deleteTransaction(t.id)} className="text-red-500 hover:text-red-700 dark:hover:text-red-400"><Trash2 className="w-4 h-4" /></button>
                     </td>
                   </tr>
                 ))
@@ -227,54 +226,72 @@ export default function Transactions() {
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              {/* Type */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Type
-                </label>
-                <select
-                  value={formData.type}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value as 'income' | 'expense', category: '' })}
-                  className="w-full px-3 py-2 rounded-lg border dark:bg-slate-800 dark:border-slate-700 text-slate-900 dark:text-slate-100"
-                >
-                  <option value="income">Income</option>
-                  <option value="expense">Expense</option>
-                </select>
+              <div className="grid grid-cols-2 gap-4">
+                {/* Type */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    Type
+                  </label>
+                  <select
+                    value={formData.type}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value as 'income' | 'expense', category: '' })}
+                    className="w-full px-3 py-2 rounded-lg border dark:bg-slate-800 dark:border-slate-700 text-slate-900 dark:text-slate-100"
+                  >
+                    <option value="income">Income</option>
+                    <option value="expense">Expense</option>
+                  </select>
+                </div>
+
+                {/* Date */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.date}
+                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border dark:bg-slate-800 dark:border-slate-700 text-slate-900 dark:text-slate-100"
+                    required
+                  />
+                </div>
               </div>
 
-              {/* Amount */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Amount
-                </label>
-                <input
-                  type="number"
-                  placeholder="Enter amount"
-                  value={formData.amount}
-                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border dark:bg-slate-800 dark:border-slate-700 text-slate-900 dark:text-slate-100"
-                  required
-                />
-              </div>
+              <div className="grid grid-cols-2 gap-4">
+                {/* Amount */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    Amount
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="0"
+                    value={formData.amount}
+                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border dark:bg-slate-800 dark:border-slate-700 text-slate-900 dark:text-slate-100"
+                    required
+                  />
+                </div>
 
-              {/* Category */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Category
-                </label>
-                <select
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border dark:bg-slate-800 dark:border-slate-700 text-slate-900 dark:text-slate-100"
-                  required
-                >
-                  <option value="">Select category</option>
-                  {categories.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
-                    </option>
-                  ))}
-                </select>
+                {/* Category */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    Category
+                  </label>
+                  <select
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border dark:bg-slate-800 dark:border-slate-700 text-slate-900 dark:text-slate-100"
+                    required
+                  >
+                    <option value="">Select</option>
+                    {categories.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {/* Description */}
@@ -283,29 +300,16 @@ export default function Transactions() {
                   Description
                 </label>
                 <textarea
-                  placeholder="Optional"
+                  placeholder="Optional note"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border dark:bg-slate-800 dark:border-slate-700 text-slate-900 dark:text-slate-100"
-                />
-              </div>
-
-              {/* Date */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Date
-                </label>
-                <input
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border dark:bg-slate-800 dark:border-slate-700 text-slate-900 dark:text-slate-100"
-                  required
+                  rows={2}
+                  className="w-full px-3 py-2 rounded-lg border dark:bg-slate-800 dark:border-slate-700 text-slate-900 dark:text-slate-100 resize-none"
                 />
               </div>
 
               {/* Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3 pt-4">
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
                 <button
                   type="button"
                   onClick={closeModal}

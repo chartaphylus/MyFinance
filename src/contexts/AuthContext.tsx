@@ -6,7 +6,7 @@ interface AuthContextType {
   user: User | null;
   profile: Profile | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string) => Promise<{ data: any; error: any }>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<void>;
@@ -53,6 +53,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
 
       if (error) throw error;
+
+      if (data && data.avatar_url) {
+        // Check if avatar_url is a path (doesn't start with http)
+        // OR if it's a supabase URL (to fix existing broken public URLs)
+        const isPath = !data.avatar_url.startsWith('http');
+        const isSupabaseUrl = data.avatar_url.includes('supabase.co/storage/v1/object/public/avatars/');
+
+        let path = data.avatar_url;
+
+        if (isSupabaseUrl) {
+          // Extract path from public URL
+          const parts = data.avatar_url.split('/avatars/');
+          if (parts.length > 1) {
+            path = parts[1];
+          }
+        }
+
+        if (isPath || isSupabaseUrl) {
+          const { data: signedData } = await supabase.storage
+            .from('avatars')
+            .createSignedUrl(path, 60 * 60 * 24); // 24 hours expiry
+
+          if (signedData) {
+            data.avatar_url = signedData.signedUrl;
+          }
+        }
+      }
+
       setProfile(data);
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -65,11 +93,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: {
+          full_name: fullName,
+        },
+      },
     });
 
     if (error) throw error;
 
-    if (data.user) {
+    // Only create profile if we have a session (email confirmation disabled or auto-confirmed)
+    // If confirmation is enabled, data.session will be null, and we'll skip this block.
+    // The profile should be created by a DB trigger or on first login in that case.
+    if (data.user && data.session) {
       const { error: profileError } = await supabase
         .from('profiles')
         .insert([
@@ -82,6 +118,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (profileError) throw profileError;
     }
+
+    return { data, error };
   }
 
   async function signIn(email: string, password: string) {

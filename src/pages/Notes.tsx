@@ -1,14 +1,21 @@
 import { useState, useEffect } from 'react';
 import { supabase, Note } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { Plus, Pencil, Trash2, Search, Tag, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Tag, X, Eye } from 'lucide-react';
 
 export default function Notes() {
   const { user } = useAuth();
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Edit/Add Modal State
   const [showModal, setShowModal] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
+
+  // View Modal State
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [viewingNote, setViewingNote] = useState<Note | null>(null);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState('');
 
@@ -111,6 +118,16 @@ export default function Notes() {
     setEditingNote(null);
   }
 
+  function openViewModal(note: Note) {
+    setViewingNote(note);
+    setShowViewModal(true);
+  }
+
+  function closeViewModal() {
+    setShowViewModal(false);
+    setViewingNote(null);
+  }
+
   const allTags = Array.from(
     new Set(notes.flatMap((note) => note.tags))
   ).sort();
@@ -196,61 +213,78 @@ export default function Notes() {
           filteredNotes.map((note) => (
             <div
               key={note.id}
-              className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm hover:border-cyan-500/50 hover:shadow-md transition-all"
+              className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm hover:border-cyan-500/50 hover:shadow-md transition-all group"
             >
               <div className="flex justify-between items-start mb-3">
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 line-clamp-1">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 line-clamp-1 group-hover:text-cyan-500 transition-colors">
                   {note.title}
                 </h3>
-                <div className="flex gap-2">
+                <div className="flex gap-1 pl-2">
+                  <button
+                    onClick={() => openViewModal(note)}
+                    className="p-1.5 text-slate-400 hover:text-cyan-500 hover:bg-cyan-50 dark:hover:bg-cyan-950/30 rounded-lg transition-colors"
+                    title="View Note"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
                   <button
                     onClick={() => openModal(note)}
-                    className="text-cyan-500 hover:text-cyan-700 dark:hover:text-cyan-400"
+                    className="p-1.5 text-slate-400 hover:text-cyan-500 hover:bg-cyan-50 dark:hover:bg-cyan-950/30 rounded-lg transition-colors"
+                    title="Edit Note"
                   >
                     <Pencil className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => deleteNote(note.id)}
-                    className="text-red-500 hover:text-red-700 dark:hover:text-red-400"
+                    className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors"
+                    title="Delete Note"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
 
-              <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-4 mb-3">
-                {note.content}
-              </p>
+              <div
+                className="cursor-pointer"
+                onClick={() => openViewModal(note)}
+              >
+                <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-4 mb-3">
+                  {note.content}
+                </p>
 
-              {note.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1 mb-3">
-                  {note.tags.map((tag, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setSelectedTag(tag)}
-                      className="text-xs px-2 py-1 rounded-full bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 hover:bg-cyan-200 dark:hover:bg-cyan-900/50 transition-colors"
-                    >
-                      #{tag}
-                    </button>
-                  ))}
-                </div>
-              )}
+                {note.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mb-3">
+                    {note.tags.map((tag, i) => (
+                      <span
+                        key={i}
+                        className="text-xs px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
 
-              <p className="text-xs text-slate-400 dark:text-slate-500">
-                Updated {new Date(note.updated_at).toLocaleDateString()}
-              </p>
+                <p className="text-xs text-slate-400 dark:text-slate-500">
+                  Updated {new Date(note.updated_at).toLocaleDateString()}
+                </p>
+              </div>
             </div>
           ))
         )}
       </div>
 
+      {/* Edit/Add Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-xl max-w-2xl w-full border border-slate-200 dark:border-slate-800 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-slate-200 dark:border-slate-800">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-xl max-w-2xl w-full border border-slate-200 dark:border-slate-800 shadow-2xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
               <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
                 {editingNote ? 'Edit Note' : 'Add Note'}
               </h2>
+              <button onClick={closeModal} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                <X className="w-6 h-6" />
+              </button>
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -314,6 +348,64 @@ export default function Notes() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Modal */}
+      {showViewModal && viewingNote && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-xl max-w-2xl w-full border border-slate-200 dark:border-slate-800 shadow-2xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-start">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 break-words">
+                  {viewingNote.title}
+                </h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                  Last updated: {new Date(viewingNote.updated_at).toLocaleString()}
+                </p>
+              </div>
+              <button onClick={closeViewModal} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto">
+              <div className="prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
+                {viewingNote.content}
+              </div>
+
+              {viewingNote.tags.length > 0 && (
+                <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
+                  <div className="flex flex-wrap gap-2">
+                    {viewingNote.tags.map((tag, i) => (
+                      <span key={i} className="px-3 py-1 rounded-full bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 text-sm">
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3">
+              <button
+                onClick={closeViewModal}
+                className="px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  closeViewModal();
+                  openModal(viewingNote);
+                }}
+                className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all shadow-lg shadow-cyan-500/25"
+              >
+                <Pencil className="w-4 h-4" />
+                <span>Edit Note</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Lock, Mail, User, Zap } from 'lucide-react';
+import { Lock, Mail, User, CheckCircle2, ArrowLeft } from 'lucide-react';
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -9,6 +9,7 @@ export default function Auth() {
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [needsVerification, setNeedsVerification] = useState(false);
 
   const { signIn, signUp } = useAuth();
 
@@ -21,13 +22,58 @@ export default function Auth() {
       if (isLogin) {
         await signIn(email, password);
       } else {
-        await signUp(email, password, fullName);
+        const { data } = await signUp(email, password, fullName);
+        // Supabase sends a session if email confirmation is disabled.
+        // If enabled, session is null, and we need to show verification screen.
+        if (data.user && !data.session) {
+          setNeedsVerification(true);
+          setLoading(false);
+          return;
+        }
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred');
     } finally {
-      setLoading(false);
+      if (!needsVerification) {
+        setLoading(false);
+      }
     }
+  }
+
+  if (needsVerification) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center p-4">
+        <div className="relative w-full max-w-md">
+          <div className="relative bg-slate-900/80 dark:bg-slate-900/80 backdrop-blur-xl border border-cyan-500/30 rounded-2xl shadow-2xl p-8 text-center">
+            <div className="flex justify-center mb-6">
+              <div className="w-16 h-16 rounded-full bg-cyan-500/10 flex items-center justify-center">
+                <CheckCircle2 className="w-8 h-8 text-cyan-500" />
+              </div>
+            </div>
+
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent mb-4">
+              Check your email
+            </h2>
+
+            <p className="text-slate-400 mb-8">
+              We've sent a verification link to <span className="text-slate-200 font-medium">{email}</span>. Please check your inbox to verify your account.
+            </p>
+
+            <button
+              onClick={() => {
+                setNeedsVerification(false);
+                setIsLogin(true);
+                setError('');
+              }}
+              className="flex items-center justify-center w-full py-3 px-4 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 transition-all border border-slate-700"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Sign In
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -121,7 +167,7 @@ export default function Auth() {
               disabled={loading}
               className="w-full py-3 px-4 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-medium rounded-lg hover:from-cyan-600 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-cyan-500/25"
             >
-              {loading ? 'Please wait...' : isLogin ? 'Sign In' : 'Sign Up'}
+              {loading ? 'Please wait...' : isLogin ? 'Sign In' : 'Create Account'}
             </button>
           </form>
 

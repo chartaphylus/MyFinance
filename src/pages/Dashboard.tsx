@@ -95,6 +95,8 @@ export default function Dashboard() {
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 5);
 
+  const [chartTab, setChartTab] = useState<'expense' | 'income'>('expense');
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -127,45 +129,45 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      {/* Summary Cards - Grid 3 cols on all screens */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
         {/* Current Balance */}
-        <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-xl p-4 sm:p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
+        <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-xl p-3 sm:p-6 border border-slate-200 dark:border-slate-700 shadow-sm min-w-0">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-slate-600 dark:text-slate-400 text-sm font-medium">Current Balance</span>
-            <DollarSign className="w-5 h-5 text-slate-400" />
+            <span className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm font-medium truncate">Balance</span>
+            <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 hidden sm:block" />
           </div>
-          <p className={`text-2xl sm:text-3xl font-bold ${currentBalance >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+          <p className={`text-sm sm:text-3xl font-bold truncate ${currentBalance >= 0 ? 'text-green-500' : 'text-red-500'}`}>
             {formatRupiah(currentBalance)}
           </p>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          <p className="hidden sm:block text-xs text-slate-500 dark:text-slate-400 mt-1">
             {currentBalance >= 0 ? 'Positive balance' : 'Negative balance'}
           </p>
         </div>
 
         {/* Total Income */}
-        <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-4 sm:p-6 border border-green-200 dark:border-green-800 shadow-sm">
+        <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-3 sm:p-6 border border-green-200 dark:border-green-800 shadow-sm min-w-0">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-green-700 dark:text-green-400 text-sm font-medium">Total Income</span>
-            <TrendingUp className="w-5 h-5 text-green-500" />
+            <span className="text-green-700 dark:text-green-400 text-xs sm:text-sm font-medium truncate">Income</span>
+            <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 hidden sm:block" />
           </div>
-          <p className="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-500">{formatRupiah(totalIncome)}</p>
-          <p className="text-xs text-green-600 dark:text-green-400 mt-1">This month</p>
+          <p className="text-sm sm:text-3xl font-bold text-green-600 dark:text-green-500 truncate">{formatRupiah(totalIncome)}</p>
+          <p className="hidden sm:block text-xs text-green-600 dark:text-green-400 mt-1">This month</p>
         </div>
 
         {/* Total Expense */}
-        <div className="bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 rounded-xl p-4 sm:p-6 border border-red-200 dark:border-red-800 shadow-sm">
+        <div className="bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 rounded-xl p-3 sm:p-6 border border-red-200 dark:border-red-800 shadow-sm min-w-0">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-red-700 dark:text-red-400 text-sm font-medium">Total Expense</span>
-            <TrendingDown className="w-5 h-5 text-red-500" />
+            <span className="text-red-700 dark:text-red-400 text-xs sm:text-sm font-medium truncate">Expense</span>
+            <TrendingDown className="w-4 h-4 sm:w-5 sm:h-5 text-red-500 hidden sm:block" />
           </div>
-          <p className="text-2xl sm:text-3xl font-bold text-red-600 dark:text-red-500">{formatRupiah(totalExpense)}</p>
-          <p className="text-xs text-red-600 dark:text-red-400 mt-1">This month</p>
+          <p className="text-sm sm:text-3xl font-bold text-red-600 dark:text-red-500 truncate">{formatRupiah(totalExpense)}</p>
+          <p className="hidden sm:block text-xs text-red-600 dark:text-red-400 mt-1">This month</p>
         </div>
       </div>
 
       {/* Charts & Recent */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         <div className="bg-white dark:bg-slate-900 rounded-xl p-4 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Financial Trend</h2>
           <LineChart data={monthlyData} />
@@ -185,21 +187,38 @@ export default function Dashboard() {
                   </div>
                   <span className={`text-sm font-semibold mt-2 sm:mt-0 ${t.type === 'income' ? 'text-green-500' : 'text-red-500'}`}>
                     {t.type === 'income' ? '+' : '-'}{formatRupiah(t.amount)}
-                  </span> 
+                  </span>
                 </div>
               ))
             )}
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-4 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Expense by Category</h2>
-          <DonutChart data={expenseByCategory} type="expense" />
-        </div>
-
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-4 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Income by Category</h2>
-          <DonutChart data={incomeByCategory} type="income" />
+        {/* Combined Category Chart */}
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-xl p-4 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Breakdown by Category</h2>
+            <div className="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
+              <button
+                onClick={() => setChartTab('expense')}
+                className={`px-3 py-1 text-sm font-medium rounded-md transition-all ${chartTab === 'expense' ? 'bg-white dark:bg-slate-700 text-red-500 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+              >
+                Expense
+              </button>
+              <button
+                onClick={() => setChartTab('income')}
+                className={`px-3 py-1 text-sm font-medium rounded-md transition-all ${chartTab === 'income' ? 'bg-white dark:bg-slate-700 text-green-500 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+              >
+                Income
+              </button>
+            </div>
+          </div>
+          <div className="h-64 sm:h-80">
+            <DonutChart
+              data={chartTab === 'expense' ? expenseByCategory : incomeByCategory}
+              type={chartTab}
+            />
+          </div>
         </div>
       </div>
     </div>
