@@ -168,9 +168,13 @@ export default function Dashboard() {
 
       {/* Charts & Recent */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-4 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-4 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Financial Trend</h2>
-          <LineChart data={monthlyData} />
+          <div className="overflow-x-auto pb-4 custom-scrollbar">
+            <div className="min-w-[600px]">
+              <LineChart data={monthlyData} />
+            </div>
+          </div>
         </div>
 
         <div className="bg-white dark:bg-slate-900 rounded-xl p-4 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
