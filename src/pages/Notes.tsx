@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { supabase, Note } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { Plus, Pencil, Trash2, Search, Tag, X, Eye } from 'lucide-react';
 
 export default function Notes() {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -68,16 +70,19 @@ export default function Notes() {
         const { error } = await supabase.from('notes').update(noteData).eq('id', editingNote.id);
 
         if (error) throw error;
+        showToast('Note updated successfully', 'success');
       } else {
         const { error } = await supabase.from('notes').insert([noteData]);
 
         if (error) throw error;
+        showToast('Note created successfully', 'success');
       }
 
       closeModal();
       loadNotes();
     } catch (error) {
       console.error('Error saving note:', error);
+      showToast('Error saving note', 'error');
     }
   }
 
@@ -88,9 +93,11 @@ export default function Notes() {
       const { error } = await supabase.from('notes').delete().eq('id', id);
 
       if (error) throw error;
+      showToast('Note deleted successfully', 'success');
       loadNotes();
     } catch (error) {
       console.error('Error deleting note:', error);
+      showToast('Error deleting note', 'error');
     }
   }
 

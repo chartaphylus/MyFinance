@@ -3,9 +3,11 @@ import { supabase, Event, Transaction } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Plus, Pencil, Trash2, Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useHolidays } from '../hooks/useHolidays';
+import { useToast } from '../contexts/ToastContext';
 
 export default function Events() {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [events, setEvents] = useState<Event[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,14 +84,17 @@ export default function Events() {
           .update(eventData)
           .eq('id', editingEvent.id);
         if (error) throw error;
+        showToast('Event updated successfully', 'success');
       } else {
         const { error } = await supabase.from('events').insert([eventData]);
         if (error) throw error;
+        showToast('Event created successfully', 'success');
       }
       closeModal();
       loadEvents();
     } catch (error) {
       console.error('Error saving event:', error);
+      showToast('Error saving event', 'error');
     }
   }
 
@@ -98,9 +103,11 @@ export default function Events() {
     try {
       const { error } = await supabase.from('events').delete().eq('id', id);
       if (error) throw error;
+      showToast('Event deleted successfully', 'success');
       loadEvents();
     } catch (error) {
       console.error('Error deleting event:', error);
+      showToast('Error deleting event', 'error');
     }
   }
 

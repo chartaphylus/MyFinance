@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { supabase, Todo } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { Plus, Pencil, Trash2, CheckCircle2, Circle, AlertCircle } from 'lucide-react';
 
 export default function Todos() {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -65,16 +67,18 @@ export default function Todos() {
           .eq('id', editingTodo.id);
 
         if (error) throw error;
+        showToast('Todo updated successfully', 'success');
       } else {
         const { error } = await supabase.from('todos').insert([todoData]);
         if (error) throw error;
+        showToast('Todo created successfully', 'success');
       }
 
       closeModal();
       loadTodos();
     } catch (error: any) {
       console.error('Error saving todo:', error);
-      alert('Error saving todo: ' + error.message);
+      showToast('Error saving todo: ' + error.message, 'error');
     }
   }
 
@@ -86,9 +90,11 @@ export default function Todos() {
         .eq('id', todo.id);
 
       if (error) throw error;
+      showToast(todo.completed ? 'Todo marked as incomplete' : 'Todo completed!', 'success');
       loadTodos();
     } catch (error) {
       console.error('Error toggling todo:', error);
+      showToast('Error updating todo', 'error');
     }
   }
 
@@ -98,9 +104,11 @@ export default function Todos() {
     try {
       const { error } = await supabase.from('todos').delete().eq('id', id);
       if (error) throw error;
+      showToast('Todo deleted successfully', 'success');
       loadTodos();
     } catch (error) {
       console.error('Error deleting todo:', error);
+      showToast('Error deleting todo', 'error');
     }
   }
 
@@ -234,8 +242,8 @@ export default function Todos() {
             <div
               key={todo.id}
               className={`bg-white dark:bg-slate-900 rounded-xl p-4 border shadow-sm transition-all ${todo.completed
-                  ? 'border-slate-200 dark:border-slate-800 opacity-60'
-                  : 'border-slate-200 dark:border-slate-800 hover:border-cyan-500/50'
+                ? 'border-slate-200 dark:border-slate-800 opacity-60'
+                : 'border-slate-200 dark:border-slate-800 hover:border-cyan-500/50'
                 }`}
             >
               <div className="flex items-start gap-4">
@@ -255,8 +263,8 @@ export default function Todos() {
                     <div className="flex-1">
                       <h3
                         className={`text-lg font-semibold ${todo.completed
-                            ? 'line-through text-slate-500 dark:text-slate-400'
-                            : 'text-slate-900 dark:text-slate-100'
+                          ? 'line-through text-slate-500 dark:text-slate-400'
+                          : 'text-slate-900 dark:text-slate-100'
                           }`}
                       >
                         {todo.title}
@@ -303,8 +311,8 @@ export default function Todos() {
                     {todo.due_date && (
                       <span
                         className={`inline-flex items-center gap-1 px-2 py-1 rounded-full ${new Date(todo.due_date) < new Date() && !todo.completed
-                            ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                            : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                          ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                          : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
                           }`}
                       >
                         Due: {new Date(todo.due_date).toLocaleDateString()}

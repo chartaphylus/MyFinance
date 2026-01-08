@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { supabase, Transaction, EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { Plus, Pencil, Trash2, TrendingUp, TrendingDown, DollarSign, Filter, Calendar, X } from 'lucide-react';
 
 export default function Transactions() {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -59,13 +61,18 @@ export default function Transactions() {
           .update(transactionData)
           .eq('id', editingTransaction.id);
         if (error) throw error;
+        showToast('Transaction updated successfully', 'success');
       } else {
         const { error } = await supabase.from('transactions').insert([transactionData]);
         if (error) throw error;
+        showToast('Transaction created successfully', 'success');
       }
       closeModal();
       loadTransactions();
-    } catch (error: any) { console.error(error); }
+    } catch (error: any) {
+      console.error(error);
+      showToast('Error saving transaction', 'error');
+    }
   }
 
   async function deleteTransaction(id: string) {
@@ -73,8 +80,12 @@ export default function Transactions() {
     try {
       const { error } = await supabase.from('transactions').delete().eq('id', id);
       if (error) throw error;
+      showToast('Transaction deleted successfully', 'success');
       loadTransactions();
-    } catch (error) { console.error(error); }
+    } catch (error) {
+      console.error(error);
+      showToast('Error deleting transaction', 'error');
+    }
   }
 
   function openModal(transaction?: Transaction) {
