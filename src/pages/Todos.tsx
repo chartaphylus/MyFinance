@@ -233,11 +233,10 @@ export default function Todos() {
           filteredTodos.map((todo) => (
             <div
               key={todo.id}
-              className={`bg-white dark:bg-slate-900 rounded-xl p-4 border shadow-sm transition-all ${
-                todo.completed
+              className={`bg-white dark:bg-slate-900 rounded-xl p-4 border shadow-sm transition-all ${todo.completed
                   ? 'border-slate-200 dark:border-slate-800 opacity-60'
                   : 'border-slate-200 dark:border-slate-800 hover:border-cyan-500/50'
-              }`}
+                }`}
             >
               <div className="flex items-start gap-4">
                 <button
@@ -255,11 +254,10 @@ export default function Todos() {
                   <div className="flex items-start justify-between gap-4 mb-2">
                     <div className="flex-1">
                       <h3
-                        className={`text-lg font-semibold ${
-                          todo.completed
+                        className={`text-lg font-semibold ${todo.completed
                             ? 'line-through text-slate-500 dark:text-slate-400'
                             : 'text-slate-900 dark:text-slate-100'
-                        }`}
+                          }`}
                       >
                         {todo.title}
                       </h3>
@@ -304,11 +302,10 @@ export default function Todos() {
 
                     {todo.due_date && (
                       <span
-                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full ${
-                          new Date(todo.due_date) < new Date() && !todo.completed
+                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full ${new Date(todo.due_date) < new Date() && !todo.completed
                             ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
                             : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
-                        }`}
+                          }`}
                       >
                         Due: {new Date(todo.due_date).toLocaleDateString()}
                       </span>
@@ -322,7 +319,7 @@ export default function Todos() {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
           <div className="bg-white dark:bg-slate-900 rounded-xl max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-slate-200 dark:border-slate-800">
               <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
@@ -401,7 +398,7 @@ export default function Todos() {
                   placeholder="e.g., Work, Personal, Finance"
                 />
               </div>
-              
+
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"

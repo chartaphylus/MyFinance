@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase, Event, Transaction } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Plus, Pencil, Trash2, Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useHolidays } from '../hooks/useHolidays';
 
 export default function Events() {
   const { user } = useAuth();
@@ -12,6 +13,9 @@ export default function Events() {
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  // Fetch holidays for the current year
+  const { holidays } = useHolidays(currentMonth.getFullYear());
 
   const [formData, setFormData] = useState({
     title: '',
@@ -145,6 +149,18 @@ export default function Events() {
   const eventsByDate = (date: Date) =>
     events.filter((e) => new Date(e.date).toDateString() === date.toDateString());
 
+  const getDayHoliday = (date: Date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    return holidays.find(h => {
+      const hDate = new Date(h.tanggal);
+      return hDate.getFullYear() === year &&
+        hDate.getMonth() === (month - 1) &&
+        hDate.getDate() === day;
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -185,27 +201,54 @@ export default function Events() {
           <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
         </div>
 
+
+
         <div className="grid grid-cols-7 gap-2 mt-2">
           {dates.map((date, idx) => {
             const dayEvents = eventsByDate(date);
+            const holiday = getDayHoliday(date);
+
             const isToday = date.toDateString() === new Date().toDateString();
             const isSelected = selectedDate?.toDateString() === date.toDateString();
             const inMonth = date.getMonth() === currentMonth.getMonth();
+            const isSunday = date.getDay() === 0;
+
+            // Text color logic
+            let textColor = "text-slate-600 dark:text-slate-400"; // default
+            if (inMonth) {
+              if (isSunday || holiday) {
+                textColor = "text-red-500 dark:text-red-400 font-medium";
+              } else {
+                textColor = "text-slate-900 dark:text-slate-100";
+              }
+            } else {
+              textColor = "text-slate-300 dark:text-slate-700";
+            }
+
+            if (isSelected) textColor = "text-white";
 
             return (
               <button
                 key={idx}
                 onClick={() => setSelectedDate(date)}
-                className={`p-2 rounded-lg text-sm relative min-h-[60px] text-left transition-colors
-                  ${inMonth ? "text-slate-900 dark:text-slate-100" : "text-slate-400 dark:text-slate-600"}
-                  ${isToday ? "border border-cyan-500 font-bold" : ""}
-                  ${isSelected ? "bg-cyan-500 text-white" : "hover:bg-slate-100 dark:hover:bg-slate-700"}
+                className={`p-2 rounded-lg text-sm relative min-h-[80px] text-left transition-colors flex flex-col items-start gap-1 group
+                  ${textColor}
+                  ${isToday ? "border border-cyan-500 font-bold" : "border border-transparent"}
+                  ${isSelected ? "bg-cyan-500 shadow-md" : "hover:bg-slate-50 dark:hover:bg-slate-800/50"}
                 `}
               >
-                {date.getDate()}
-                {dayEvents.length > 0 && (
-                  <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-cyan-500 rounded-full"></span>
-                )}
+                <div className="flex justify-between w-full">
+                  <span className={`${(isSunday || holiday) && !isSelected ? 'text-red-500 dark:text-red-400' : ''}`}>
+                    {date.getDate()}
+                  </span>
+                  {dayEvents.length > 0 && (
+                    <div className="flex gap-0.5">
+                      {dayEvents.slice(0, 3).map((_, i) => (
+                        <div key={i} className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white/70' : 'bg-cyan-500'}`} />
+                      ))}
+                    </div>
+                  )}
+                </div>
               </button>
             );
           })}
@@ -216,6 +259,13 @@ export default function Events() {
             <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
               Events on {selectedDate.toLocaleDateString()}
             </h3>
+
+            {getDayHoliday(selectedDate) && (
+              <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-sm font-medium">
+                {getDayHoliday(selectedDate)?.keterangan}
+              </div>
+            )}
+
             <div className="space-y-2 mt-2">
               {eventsByDate(selectedDate).length > 0 ? (
                 eventsByDate(selectedDate).map((event) => (
@@ -245,7 +295,7 @@ export default function Events() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
           <div className="bg-white dark:bg-slate-900 rounded-xl max-w-md w-full border border-slate-200 dark:border-slate-700 shadow-2xl">
             <div className="p-6 border-b border-slate-200 dark:border-slate-700">
               <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">

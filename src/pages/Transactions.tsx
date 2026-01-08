@@ -192,8 +192,8 @@ export default function Transactions() {
                     <td className="px-4 py-2 text-sm text-slate-900 dark:text-slate-100">{new Date(t.date).toLocaleDateString()}</td>
                     <td className="px-4 py-2">
                       <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${t.type === 'income'
-                          ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400'
-                          : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400'
+                        ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400'
+                        : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400'
                         }`}>{t.category}</span>
                     </td>
                     <td className="px-4 py-2 text-sm text-slate-600 dark:text-slate-400">{t.description || '-'}</td>
@@ -217,7 +217,7 @@ export default function Transactions() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
           <div className="bg-white dark:bg-slate-900 rounded-xl max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl overflow-y-auto max-h-[90vh]">
             <div className="p-6 border-b border-slate-200 dark:border-slate-800">
               <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
